@@ -6,6 +6,7 @@ import com.cfh.cacheframe.annotation.Update;
 import com.cfh.cacheframe.resolver.impl.resolver.CacheAnnotationResolver;
 import com.cfh.cacheframe.resolver.impl.resolver.DeleteAnnotationResolver;
 import com.cfh.cacheframe.resolver.impl.resolver.UpdateAnnotationResolver;
+import com.cfh.cacheframe.util.ReflectionUtil;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Pointcut;
@@ -14,9 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.HashMap;
+import java.lang.reflect.Proxy;
 
 /**
  * @Author: chenfeihao@corp.netease.com
@@ -33,6 +34,9 @@ public class AnnotationWeave {
 
     @Autowired
     private UpdateAnnotationResolver updateAnnotationResolver;
+
+    @Autowired
+    private CacheManager cacheManager;
 
     /**
      * @Cache注解的切入点
@@ -53,12 +57,32 @@ public class AnnotationWeave {
     public void updatePointcut(){}
 
     @Around(value = "cachePointcut()")
-    public void handleCacheAnnotation(ProceedingJoinPoint joinPoint) {
+    public Object handleCacheAnnotation(ProceedingJoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
 
-        Annotation cacheAnnotation = method.getAnnotation(Cache.class);
-        cacheAnnotationResolver.resolver(cacheAnnotation, method, joinPoint.getTarget(), getParamMap(method, joinPoint.getArgs()));
+        /**
+         * 生成动态代理
+         */
+        if (!cacheManager.dynamicInstanceContain(joinPoint.getTarget().getClass().getName())) {
+            DynamicProxy dynamicProxy = new DynamicProxy(joinPoint.getTarget());
+            // 获取service接口(默认service层的实现类只实现了对于的service接口)
+            Class interfaze = joinPoint.getTarget().getClass().getInterfaces()[0];
+            // 生成动态代理对象
+            Object dynamicInstance = Proxy.newProxyInstance(interfaze.getClassLoader(), new Class[]{interfaze}, dynamicProxy);
+            // 将动态代理对象交由CacheManager管理
+            cacheManager.addDynamicInstance(dynamicInstance);
+        }
+
+        Object dynamicInstance = cacheManager.getDynamicInstance(joinPoint.getTarget().getClass().getName());
+
+        // 使用代理的逻辑替换service层原先的逻辑
+        try {
+            return method.invoke(dynamicInstance, joinPoint.getArgs());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e;
+        }
     }
 
     @Around(value = "deletePointcut()")
@@ -69,7 +93,7 @@ public class AnnotationWeave {
         Annotation cacheAnnotation = method.getAnnotation(Delete.class);
         try {
             joinPoint.proceed(joinPoint.getArgs());
-            deleteAnnotationResolver.resolver(cacheAnnotation, method, joinPoint.getTarget(), getParamMap(method, joinPoint.getArgs()));
+            deleteAnnotationResolver.resolver(cacheAnnotation, method, joinPoint.getTarget(), ReflectionUtil.getParamMap(method, joinPoint.getArgs()));
         } catch (Throwable throwable) {
             throwable.printStackTrace();
         }
@@ -83,25 +107,9 @@ public class AnnotationWeave {
         Annotation cacheAnnotation = method.getAnnotation(Update.class);
         try {
             joinPoint.proceed(joinPoint.getArgs());
-            deleteAnnotationResolver.resolver(cacheAnnotation, method, joinPoint.getTarget(), getParamMap(method, joinPoint.getArgs()));
+            deleteAnnotationResolver.resolver(cacheAnnotation, method, joinPoint.getTarget(), ReflectionUtil.getParamMap(method, joinPoint.getArgs()));
         } catch (Throwable throwable) {
             throwable.printStackTrace();
         }
-    }
-
-    private HashMap<String, Object> getParamMap(Method method, Object[] paramValues) {
-        HashMap<String, Object> paramMap = new HashMap<>();
-
-        if (paramValues == null || paramValues.length == 0) {
-            return paramMap;
-        }
-
-        Parameter[] parameters = method.getParameters();
-
-        for (int i = 0; i < parameters.length; i++) {
-            paramMap.put(parameters[i].getName(), paramValues[i]);
-        }
-
-        return paramMap;
     }
 }

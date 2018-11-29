@@ -2,7 +2,12 @@ package com.cfh.cacheframe.core;
 
 import com.cfh.cacheframe.adapter.CacheAdaptor;
 import com.cfh.cacheframe.annotation.Cache;
+import com.cfh.cacheframe.resolver.impl.resolver.CacheAnnotationResolver;
+import com.cfh.cacheframe.util.ReflectionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -10,20 +15,23 @@ import org.springframework.context.ApplicationContextAware;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.concurrent.Semaphore;
 
 /**
  * @Author: chenfeihao@corp.netease.com
  * @Date: 2018/11/29
  * 缓存逻辑的动态代理
  */
-public class DynamicProxy implements InvocationHandler, ApplicationContextAware {
+public class DynamicProxy implements InvocationHandler, ApplicationContextAware, InitializingBean {
+    private Logger log = LoggerFactory.getLogger(DynamicProxy.class);
+
     private Object target;
 
     private ApplicationContext applicationContext;
 
     private CacheAdaptor cacheAdaptor;
 
-    private String cacheKey;
+    private Semaphore semaphore;
 
     /**
      * 获取配置文件中是否打开二级缓存的配置
@@ -37,9 +45,8 @@ public class DynamicProxy implements InvocationHandler, ApplicationContextAware 
     @Value("${direct_read_concurrent_num}")
     private int directReadConcurrentNum;
 
-    public DynamicProxy(Object target, String cacheKey) {
+    public DynamicProxy(Object target) {
         this.target = target;
-        this.cacheKey = cacheKey;
     }
 
     @Override
@@ -52,8 +59,9 @@ public class DynamicProxy implements InvocationHandler, ApplicationContextAware 
             return method.invoke(target, args);
         }
 
+        String key = ReflectionUtil.key(cacheAnnotation, method, ReflectionUtil.getParamMap(method, args), applicationContext, log);
         // 尝试从缓存中获取
-        Object result = cacheAdaptor.get(cacheKey);
+        Object result = cacheAdaptor.get(key);
 
         // 成功获取缓存
         if (result != null) {
@@ -66,7 +74,16 @@ public class DynamicProxy implements InvocationHandler, ApplicationContextAware 
         }
 
         // 若二级缓存也获取失败，则直接访问数据库然后重新设置缓存，使用信号量机制防止缓存并发问题
-        return null;
+        semaphore.acquire();
+
+        try {
+            Object fromDB = method.invoke(target,args);
+            cacheAdaptor.insert(key, fromDB);
+
+            return fromDB;
+        } finally {
+            semaphore.release();
+        }
     }
 
     @Override
@@ -75,5 +92,11 @@ public class DynamicProxy implements InvocationHandler, ApplicationContextAware 
         if (applicationContext != null) {
             cacheAdaptor = applicationContext.getBean(CacheAdaptor.class);
         }
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        // 初始化计数信号量
+        this.semaphore = new Semaphore(directReadConcurrentNum);
     }
 }
