@@ -7,8 +7,6 @@ import com.cfh.cacheframe.resolver.impl.resolver.CacheAnnotationResolver;
 import com.cfh.cacheframe.resolver.impl.resolver.DeleteAnnotationResolver;
 import com.cfh.cacheframe.resolver.impl.resolver.UpdateAnnotationResolver;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.Signature;
-import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -18,9 +16,7 @@ import org.springframework.stereotype.Component;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * @Author: chenfeihao@corp.netease.com
@@ -71,7 +67,12 @@ public class AnnotationWeave {
         Method method = signature.getMethod();
 
         Annotation cacheAnnotation = method.getAnnotation(Delete.class);
-        deleteAnnotationResolver.resolver(cacheAnnotation, method, joinPoint.getTarget(), getParamMap(method, joinPoint.getArgs()));
+        try {
+            joinPoint.proceed(joinPoint.getArgs());
+            deleteAnnotationResolver.resolver(cacheAnnotation, method, joinPoint.getTarget(), getParamMap(method, joinPoint.getArgs()));
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
     }
 
     @Around(value = "updatePointcut()")
@@ -80,7 +81,12 @@ public class AnnotationWeave {
         Method method = signature.getMethod();
 
         Annotation cacheAnnotation = method.getAnnotation(Update.class);
-        deleteAnnotationResolver.resolver(cacheAnnotation, method, joinPoint.getTarget(), getParamMap(method, joinPoint.getArgs()));
+        try {
+            joinPoint.proceed(joinPoint.getArgs());
+            deleteAnnotationResolver.resolver(cacheAnnotation, method, joinPoint.getTarget(), getParamMap(method, joinPoint.getArgs()));
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
     }
 
     private HashMap<String, Object> getParamMap(Method method, Object[] paramValues) {

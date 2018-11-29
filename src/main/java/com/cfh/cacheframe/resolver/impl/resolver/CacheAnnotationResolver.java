@@ -47,7 +47,7 @@ public class CacheAnnotationResolver implements AnnotationResolver, ApplicationC
      * @param paramMap
      * @return
      */
-    private String key(Annotation annotation, Method method, Map<String, Object> paramMap) {
+    public String key(Annotation annotation, Method method, Map<String, Object> paramMap) {
         String effectiveKey;
 
         // 获得缓存key

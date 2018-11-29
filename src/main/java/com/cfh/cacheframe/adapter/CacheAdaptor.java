@@ -7,6 +7,9 @@ package com.cfh.cacheframe.adapter;
  */
 
 public interface CacheAdaptor {
+    // 获取缓存
+    public Object get(String key);
+
     // 添加缓存
     public boolean insert(String key, Object value);
 
@@ -18,4 +21,7 @@ public interface CacheAdaptor {
 
     // 设置缓存过期时间
     public boolean setExpireTime(String key, Long mill);
+
+    // 中间件
+    public void setClient(Object client);
 }
