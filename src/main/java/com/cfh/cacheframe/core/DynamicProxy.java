@@ -2,7 +2,6 @@ package com.cfh.cacheframe.core;
 
 import com.cfh.cacheframe.adapter.CacheAdaptor;
 import com.cfh.cacheframe.annotation.Cache;
-import com.cfh.cacheframe.resolver.impl.resolver.CacheAnnotationResolver;
 import com.cfh.cacheframe.util.ReflectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
