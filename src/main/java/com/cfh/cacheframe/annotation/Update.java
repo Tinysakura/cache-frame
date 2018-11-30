@@ -21,4 +21,7 @@ public @interface Update {
 
     // 更新后的缓存的失效时间(ms)
     long expireTime() default Long.MAX_VALUE;
+
+    // 所要更新的缓存对应的设置缓存方法的方法名（默认两个方法在同一个类中）
+    String methodName();
 }

@@ -13,8 +13,15 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @Author: chenfeihao@corp.netease.com
@@ -36,7 +43,50 @@ public class UpdateAnnotationResolver implements AnnotationResolver, Application
         }
 
         String key = ReflectionUtil.key(annotation, method, paramMap, applicationContext, log);
-        cacheAdaptor.delete(key);
+
+        // 执行update方法对应的方法，获取新的缓存值
+        Class clazz = target.getClass();
+        String cacheSetMethodName = ((Update) annotation).methodName();
+        List<Class<?>> parameterTypes = paramMap.values().stream().map(Object::getClass).collect(Collectors.toList());
+
+        Method cacheSetMethod = null;
+
+        try {
+            cacheSetMethod = clazz.getMethod(cacheSetMethodName, parameterTypes.toArray(new Class[]{}));
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+
+        /**
+         * 没有获取到对应的缓存设置方法的情况, 放弃更新缓存
+         */
+        if (cacheSetMethod == null) {
+            return;
+        }
+
+        // TODO invoke缓存设置方法时如何正确的获取到参数
+        Parameter[] cacheSetParameters = cacheSetMethod.getParameters();
+        List<Object> parameterValue = Arrays.asList(cacheSetParameters).stream().map(Parameter::getName).map(paramName -> paramMap.get(paramName)).collect(Collectors.toList());
+
+        Object newValue = null;
+
+        try {
+            newValue = cacheSetMethod.invoke(target, parameterValue.toArray(new Object[]{}));
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+
+        // 如果获取缓存新值的方法执行失败则不更新缓存
+        if (newValue == null) {
+            return;
+        }
+
+        // 更新缓存
+        cacheAdaptor.update(key, newValue);
+
+        // TODO 更新二级缓存
     }
 
     @Override

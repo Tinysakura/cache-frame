@@ -41,6 +41,8 @@ public class DeleteAnnotationResolver implements AnnotationResolver, Application
          * 删除缓存
          */
         cacheAdaptor.delete(key);
+
+        // TODO 删除二级缓存
     }
 
     @Override
