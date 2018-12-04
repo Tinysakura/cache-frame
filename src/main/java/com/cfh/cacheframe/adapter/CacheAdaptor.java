@@ -5,7 +5,6 @@ package com.cfh.cacheframe.adapter;
  * @Date: 2018/11/28
  * 缓存适配器接口，使用适配器模式消除各个分布式数据库中间件的差异
  */
-
 public interface CacheAdaptor {
     // 获取缓存
     public Object get(String key);

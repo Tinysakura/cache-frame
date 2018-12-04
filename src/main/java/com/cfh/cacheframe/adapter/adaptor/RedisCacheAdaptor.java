@@ -8,7 +8,6 @@ import redis.clients.jedis.JedisPool;
  * @Date: 2018/11/29
  * 使用redis作为缓存中间件的适配器类
  */
-
 public class RedisCacheAdaptor implements CacheAdaptor {
 
     JedisPool jedisPool = new JedisPool();
