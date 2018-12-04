@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @Author: chenfeihao@corp.netease.com
  * @Date: 2018/12/4
- * @TODO 最不常使用的元素被淘汰的缓存容器
+ * @TODO 性能提升
  */
 
 public class LFUCacheClient<K, V> extends ConcurrentHashMap<K, V> implements CacheClient {
@@ -20,7 +20,7 @@ public class LFUCacheClient<K, V> extends ConcurrentHashMap<K, V> implements Cac
         super(maxCapacity);
         this.maxCapacity = maxCapacity;
 
-        hitFrequencySet = new PriorityBlockingMapQueue<>(maxCapacity, (e1, e2) -> e1.getHitFrequency() < e2.getHitFrequency() ? 1 : e1.getHitFrequency() == e2.getHitFrequency() ? 0 : -1);
+        hitFrequencySet = new PriorityBlockingMapQueue<>(maxCapacity, (e1, e2) -> e1.getHitFrequency() > e2.getHitFrequency() ? 1 : e1.getHitFrequency() == e2.getHitFrequency() ? 0 : -1);
     }
 
     /**
