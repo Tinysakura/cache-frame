@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @Author: chenfeihao@corp.netease.com
  * @Date: 2018/12/4
  * 基于LinkedHashMap扩展的线程安全的LRU缓存容器
+ * @TODO 性能提升
  */
 public class LRUCacheClient<K, V> extends LinkedHashMap<K, V> implements CacheClient {
     private static final Logger log = LoggerFactory.getLogger(LRUCacheClient.class);
