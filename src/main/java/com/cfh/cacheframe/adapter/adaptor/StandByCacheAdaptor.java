@@ -1,6 +1,7 @@
 package com.cfh.cacheframe.adapter.adaptor;
 
 import com.cfh.cacheframe.adapter.CacheAdaptor;
+import com.cfh.cacheframe.adapter.CacheClient;
 import com.cfh.cacheframe.common.enums.CacheRejectStrategyEnum;
 import com.cfh.cacheframe.common.enums.CacheStrategyEnum;
 import org.springframework.beans.factory.InitializingBean;
@@ -27,6 +28,8 @@ public class StandByCacheAdaptor implements CacheAdaptor, InitializingBean {
      * 缓存大小超出限制后的丢弃策略
      */
     private CacheRejectStrategyEnum cacheRejectStrategy;
+
+    private CacheClient memCacheClient;
 
     @Override
     public Object get(String key) {
