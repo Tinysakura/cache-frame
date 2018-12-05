@@ -3,6 +3,8 @@ package com.cfh.cacheframe.adapter.client;
 import com.cfh.cacheframe.adapter.CacheClient;
 import com.cfh.cacheframe.adapter.RejectHandler;
 import com.cfh.cacheframe.common.PriorityBlockingMapQueue;
+import com.cfh.cacheframe.util.MemSizeUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,6 +20,9 @@ public class LFUCacheClient<K, V> extends ConcurrentHashMap<K, V> implements Cac
     private Integer maxCapacity;
     private volatile long memSize;
     private RejectHandler<K, V> rejectHandler;
+
+    @Autowired
+    private MemSizeUtil memSizeUtil;
 
     public LFUCacheClient(Integer maxCapacity) {
         super(maxCapacity);
@@ -56,6 +61,11 @@ public class LFUCacheClient<K, V> extends ConcurrentHashMap<K, V> implements Cac
         // 淘汰最少被访问的缓存即小顶堆堆顶的元素
         K weedKey = hitFrequencySet.poll().getKey();
         super.remove(weedKey);
+
+        // 超出内存限制，使用缓存拒绝策略进行处理
+        if (memSizeUtil.estimate(this) > memSize) {
+            rejectHandler.reject(key, value, this);
+        }
 
         return super.put(key, value);
     }

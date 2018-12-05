@@ -2,8 +2,10 @@ package com.cfh.cacheframe.adapter.client;
 
 import com.cfh.cacheframe.adapter.CacheClient;
 import com.cfh.cacheframe.adapter.RejectHandler;
+import com.cfh.cacheframe.util.MemSizeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,6 +27,9 @@ public class LRUCacheClient<K, V> extends LinkedHashMap<K, V> implements CacheCl
     private ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private volatile long memSize;
     private RejectHandler<K, V> rejectHandler;
+
+    @Autowired
+    private MemSizeUtil memSizeUtil;
 
     public LRUCacheClient(int maxCapacity)
     {
@@ -62,6 +67,11 @@ public class LRUCacheClient<K, V> extends LinkedHashMap<K, V> implements CacheCl
         readWriteLock.writeLock().lock();
 
         try {
+            // 超出内存限制，使用缓存拒绝策略进行处理
+            if (memSizeUtil.estimate(this) > memSize) {
+                rejectHandler.reject(key, value, this);
+            }
+
             return super.put(key, value);
         } catch (Exception e) {
             e.printStackTrace();
