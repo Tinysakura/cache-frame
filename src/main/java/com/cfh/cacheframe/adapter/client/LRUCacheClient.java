@@ -1,6 +1,7 @@
 package com.cfh.cacheframe.adapter.client;
 
 import com.cfh.cacheframe.adapter.CacheClient;
+import com.cfh.cacheframe.adapter.RejectHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,11 +23,28 @@ public class LRUCacheClient<K, V> extends LinkedHashMap<K, V> implements CacheCl
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;
     // 使用读写锁保证线程安全的同时提高缓存的读性能
     private ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private volatile long memSize;
+    private RejectHandler<K, V> rejectHandler;
 
     public LRUCacheClient(int maxCapacity)
     {
         super(maxCapacity, DEFAULT_LOAD_FACTOR, true);
         this.maxCapacity = maxCapacity;
+    }
+
+    public LRUCacheClient(int maxCapacity, long memSize)
+    {
+        super(maxCapacity, DEFAULT_LOAD_FACTOR, true);
+        this.maxCapacity = maxCapacity;
+        this.memSize = memSize;
+    }
+
+    public RejectHandler<K, V> getRejectHandler() {
+        return rejectHandler;
+    }
+
+    public void setRejectHandler(RejectHandler<K, V> rejectHandler) {
+        this.rejectHandler = rejectHandler;
     }
 
     /**

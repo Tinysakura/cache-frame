@@ -5,14 +5,12 @@ import com.cfh.cacheframe.adapter.CacheClient;
 import com.cfh.cacheframe.common.enums.CacheRejectStrategyEnum;
 import com.cfh.cacheframe.common.enums.CacheStrategyEnum;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.stereotype.Component;
 
 /**
  * @Author: chenfeihao@corp.netease.com
  * @Date: 2018/12/4
  * 二级缓存（内存缓存）
  */
-@Component
 public class StandByCacheAdaptor implements CacheAdaptor, InitializingBean {
     /**
      * 使用的缓存策略
@@ -20,14 +18,19 @@ public class StandByCacheAdaptor implements CacheAdaptor, InitializingBean {
     private CacheStrategyEnum cacheStrategy;
 
     /**
+     * 缓存拒绝策略
+     */
+    private CacheRejectStrategyEnum cacheRejectStrategy;
+
+    /**
      * 用于二级缓存的内存(/mb)
      */
     private Long memSize;
 
     /**
-     * 缓存大小超出限制后的丢弃策略
+     * 缓存容器的初始容量
      */
-    private CacheRejectStrategyEnum cacheRejectStrategy;
+    private Long maxCapacity;
 
     private CacheClient memCacheClient;
 

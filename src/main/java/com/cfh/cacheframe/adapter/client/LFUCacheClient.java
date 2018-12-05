@@ -1,6 +1,7 @@
 package com.cfh.cacheframe.adapter.client;
 
 import com.cfh.cacheframe.adapter.CacheClient;
+import com.cfh.cacheframe.adapter.RejectHandler;
 import com.cfh.cacheframe.common.PriorityBlockingMapQueue;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,14 +14,32 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class LFUCacheClient<K, V> extends ConcurrentHashMap<K, V> implements CacheClient {
     // 在内部维护一个与ConcurrentHashMap自身大小相同的小顶堆
-    PriorityBlockingMapQueue<Entry> hitFrequencySet;
-    Integer maxCapacity;
+    private PriorityBlockingMapQueue<Entry> hitFrequencySet;
+    private Integer maxCapacity;
+    private volatile long memSize;
+    private RejectHandler<K, V> rejectHandler;
 
     public LFUCacheClient(Integer maxCapacity) {
         super(maxCapacity);
         this.maxCapacity = maxCapacity;
 
         hitFrequencySet = new PriorityBlockingMapQueue<>(maxCapacity, (e1, e2) -> e1.getHitFrequency() > e2.getHitFrequency() ? 1 : e1.getHitFrequency() == e2.getHitFrequency() ? 0 : -1);
+    }
+
+    public LFUCacheClient(Integer maxCapacity, Long memSize) {
+        super(maxCapacity);
+        this.maxCapacity = maxCapacity;
+        this.memSize = memSize;
+
+        hitFrequencySet = new PriorityBlockingMapQueue<>(maxCapacity, (e1, e2) -> e1.getHitFrequency() > e2.getHitFrequency() ? 1 : e1.getHitFrequency() == e2.getHitFrequency() ? 0 : -1);
+    }
+
+    public RejectHandler<K, V> getRejectHandler() {
+        return rejectHandler;
+    }
+
+    public void setRejectHandler(RejectHandler<K, V> rejectHandler) {
+        this.rejectHandler = rejectHandler;
     }
 
     /**
