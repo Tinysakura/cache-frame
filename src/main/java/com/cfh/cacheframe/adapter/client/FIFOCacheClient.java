@@ -3,7 +3,6 @@ package com.cfh.cacheframe.adapter.client;
 import com.cfh.cacheframe.adapter.CacheClient;
 import com.cfh.cacheframe.adapter.RejectHandler;
 import com.cfh.cacheframe.util.MemSizeUtil;
-import com.cfh.cacheframe.util.MemorySizes;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,12 +24,12 @@ public class FIFOCacheClient<K, V> extends ConcurrentHashMap<K, V>implements Cac
     @Autowired
     private MemSizeUtil memSizeUtil;
 
-    public FIFOCacheClient(int maxCapacity) {
+    public FIFOCacheClient(Integer maxCapacity) {
         super(maxCapacity);
         linkedQueue = new ConcurrentLinkedQueue<>();
     }
 
-    public FIFOCacheClient(int maxCapacity, Long memSize) {
+    public FIFOCacheClient(Integer maxCapacity, Long memSize) {
         super(maxCapacity);
         linkedQueue = new ConcurrentLinkedQueue<>();
         this.memSize = memSize;
@@ -56,10 +55,29 @@ public class FIFOCacheClient<K, V> extends ConcurrentHashMap<K, V>implements Cac
 
         // 超出内存限制，使用缓存拒绝策略进行处理
         if (memSizeUtil.estimate(this) > memSize) {
-            rejectHandler.reject(key, value, this);
+            rejectHandler.reject(key, value);
         }
 
         return super.put(key, value);
     }
 
+    @Override
+    public Object get(String key) {
+        return null;
+    }
+
+    @Override
+    public boolean insert(String key, Object value) {
+        return false;
+    }
+
+    @Override
+    public boolean update(String key, Object value) {
+        return false;
+    }
+
+    @Override
+    public boolean delete(String key) {
+        return false;
+    }
 }

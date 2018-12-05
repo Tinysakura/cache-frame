@@ -64,7 +64,7 @@ public class LFUCacheClient<K, V> extends ConcurrentHashMap<K, V> implements Cac
 
         // 超出内存限制，使用缓存拒绝策略进行处理
         if (memSizeUtil.estimate(this) > memSize) {
-            rejectHandler.reject(key, value, this);
+            rejectHandler.reject(key, value);
         }
 
         return super.put(key, value);
@@ -76,6 +76,26 @@ public class LFUCacheClient<K, V> extends ConcurrentHashMap<K, V> implements Cac
         hitFrequencySet.increaseHitFrequency(key);
 
         return super.get(key);
+    }
+
+    @Override
+    public Object get(String key) {
+        return null;
+    }
+
+    @Override
+    public boolean insert(String key, Object value) {
+        return false;
+    }
+
+    @Override
+    public boolean update(String key, Object value) {
+        return false;
+    }
+
+    @Override
+    public boolean delete(String key) {
+        return false;
     }
 
     public class Entry{

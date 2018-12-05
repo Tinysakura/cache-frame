@@ -6,5 +6,7 @@ package com.cfh.cacheframe.adapter;
  * 拒绝策略接口
  */
 public interface RejectHandler<K, V> {
-    public boolean reject(K key, V value, CacheClient cacheClient);
+    public boolean reject(K key, V value);
+
+    public void setCacheClient(CacheClient cacheClient);
 }

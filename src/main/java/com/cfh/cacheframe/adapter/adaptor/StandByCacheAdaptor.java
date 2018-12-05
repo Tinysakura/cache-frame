@@ -2,9 +2,13 @@ package com.cfh.cacheframe.adapter.adaptor;
 
 import com.cfh.cacheframe.adapter.CacheAdaptor;
 import com.cfh.cacheframe.adapter.CacheClient;
+import com.cfh.cacheframe.adapter.RejectHandler;
+import com.cfh.cacheframe.annotation.Cache;
 import com.cfh.cacheframe.common.enums.CacheRejectStrategyEnum;
 import com.cfh.cacheframe.common.enums.CacheStrategyEnum;
 import org.springframework.beans.factory.InitializingBean;
+
+import java.lang.reflect.Constructor;
 
 /**
  * @Author: chenfeihao@corp.netease.com
@@ -34,24 +38,26 @@ public class StandByCacheAdaptor implements CacheAdaptor, InitializingBean {
 
     private CacheClient memCacheClient;
 
+    private RejectHandler rejectHandler;
+
     @Override
     public Object get(String key) {
-        return null;
+        return memCacheClient.get(key);
     }
 
     @Override
     public boolean insert(String key, Object value) {
-        return false;
+        return memCacheClient.insert(key, value);
     }
 
     @Override
     public boolean update(String key, Object value) {
-        return false;
+        return memCacheClient.update(key, value);
     }
 
     @Override
     public boolean delete(String key) {
-        return false;
+        return memCacheClient.delete(key);
     }
 
     @Override
@@ -60,9 +66,7 @@ public class StandByCacheAdaptor implements CacheAdaptor, InitializingBean {
     }
 
     @Override
-    public void setClient(Object client) {
-
-    }
+    public void setClient(Object client) {};
 
     public CacheStrategyEnum getCacheStrategy() {
         return cacheStrategy;
@@ -94,6 +98,49 @@ public class StandByCacheAdaptor implements CacheAdaptor, InitializingBean {
      */
     @Override
     public void afterPropertiesSet() throws Exception {
+        /**
+         * 初始化CacheClient
+         */
+        Constructor constructor;
 
+        switch (cacheStrategy) {
+            case FIFO:
+                constructor = CacheStrategyEnum.FIFO.getClazz().getConstructor(Integer.class, Long.class);
+                memCacheClient = (CacheClient) constructor.newInstance(maxCapacity, memSize);
+                break;
+            case LFU:
+                constructor = CacheStrategyEnum.LFU.getClazz().getConstructor(Integer.class, Long.class);
+                memCacheClient = (CacheClient) constructor.newInstance(maxCapacity, memSize);
+                break;
+            case LRU:
+                constructor = CacheStrategyEnum.LRU.getClazz().getConstructor(Integer.class, Long.class);
+                memCacheClient = (CacheClient) constructor.newInstance(maxCapacity, memSize);
+                break;
+            default:
+                break;
+        }
+
+        /**
+         * 初始化RejectHandler
+         */
+        switch (cacheRejectStrategy) {
+            case DISCARD:
+                rejectHandler = (RejectHandler) CacheRejectStrategyEnum.DISCARD.getClazz().newInstance();
+                // 关联CacheClient与RejectHandler
+                rejectHandler.setCacheClient(memCacheClient);
+                break;
+            case CLEAN:
+                rejectHandler = (RejectHandler) CacheRejectStrategyEnum.CLEAN.getClazz().newInstance();
+                // 关联CacheClient与RejectHandler
+                rejectHandler.setCacheClient(memCacheClient);
+                break;
+            case TS:
+                rejectHandler = (RejectHandler) CacheRejectStrategyEnum.TS.getClazz().newInstance();
+                // 关联CacheClient与RejectHandler
+                rejectHandler.setCacheClient(memCacheClient);
+                break;
+            default:
+                break;
+        }
     }
 }

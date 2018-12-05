@@ -31,13 +31,13 @@ public class LRUCacheClient<K, V> extends LinkedHashMap<K, V> implements CacheCl
     @Autowired
     private MemSizeUtil memSizeUtil;
 
-    public LRUCacheClient(int maxCapacity)
+    public LRUCacheClient(Integer maxCapacity)
     {
         super(maxCapacity, DEFAULT_LOAD_FACTOR, true);
         this.maxCapacity = maxCapacity;
     }
 
-    public LRUCacheClient(int maxCapacity, long memSize)
+    public LRUCacheClient(Integer maxCapacity, Long memSize)
     {
         super(maxCapacity, DEFAULT_LOAD_FACTOR, true);
         this.maxCapacity = maxCapacity;
@@ -69,7 +69,7 @@ public class LRUCacheClient<K, V> extends LinkedHashMap<K, V> implements CacheCl
         try {
             // 超出内存限制，使用缓存拒绝策略进行处理
             if (memSizeUtil.estimate(this) > memSize) {
-                rejectHandler.reject(key, value, this);
+                rejectHandler.reject(key, value);
             }
 
             return super.put(key, value);
@@ -99,5 +99,25 @@ public class LRUCacheClient<K, V> extends LinkedHashMap<K, V> implements CacheCl
         }
 
         return null;
+    }
+
+    @Override
+    public Object get(String key) {
+        return null;
+    }
+
+    @Override
+    public boolean insert(String key, Object value) {
+        return false;
+    }
+
+    @Override
+    public boolean update(String key, Object value) {
+        return false;
+    }
+
+    @Override
+    public boolean delete(String key) {
+        return false;
     }
 }
