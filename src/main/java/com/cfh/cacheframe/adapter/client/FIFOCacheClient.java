@@ -21,15 +21,16 @@ public class FIFOCacheClient<K, V> extends ConcurrentHashMap<K, V>implements Cac
     }
 
     /**
-     * @TODO 是否为了性能放弃维护严格的进入容器的顺序
      * @param key
      * @param value
      * @return
      */
     @Override
     public V put(K key, V value) {
-        super.remove(linkedQueue.poll());
-        linkedQueue.add(value);
+        synchronized (this) {
+            super.remove(linkedQueue.poll());
+            linkedQueue.add(value);
+        }
 
         return super.put(key, value);
     }
